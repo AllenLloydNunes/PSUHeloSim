@@ -1,0 +1,228 @@
+﻿################################################################
+ Simplified Landing Model -- verification suite
+ 18-Sep-2026 12:46:22
+################################################################
+
+================================================================
+ STEP 1 -- free-fall verification (contact disabled)
+================================================================
+
+  1a  level, at rest
+    max |position error| vs analytic : 1.332e-13 m      (tol 1.0e-09)
+    max |attitude drift|             : 0.000e+00 rad    (tol 1.0e-12)
+    max |body rate|                  : 0.000e+00 rad/s  (tol 1.0e-12)
+    start altitude                   : +5.0000 m (above ground plane)
+    final altitude                   : -14.6200 m (no floor: contact disabled)
+    net drop over 2.0 s               : 19.6200 m
+    [PASS]
+
+  1b  level, translating
+    max |position error| vs analytic : 1.332e-13 m      (tol 1.0e-09)
+    max |attitude drift|             : 0.000e+00 rad    (tol 1.0e-12)
+    max |body rate|                  : 0.000e+00 rad/s  (tol 1.0e-12)
+    start altitude                   : +5.0000 m (above ground plane)
+    final altitude                   : -14.6200 m (no floor: contact disabled)
+    net drop over 2.0 s               : 19.6200 m
+    [PASS]
+
+  1c  tilted, translating
+    max |position error| vs analytic : 2.784e-13 m      (tol 1.0e-09)
+    max |attitude drift|             : 0.000e+00 rad    (tol 1.0e-12)
+    max |body rate|                  : 0.000e+00 rad/s  (tol 1.0e-12)
+    start altitude                   : +5.0000 m (above ground plane)
+    final altitude                   : -13.2030 m (no floor: contact disabled)
+    net drop over 2.0 s               : 18.2030 m
+    [PASS]
+
+================================================================
+ STEP 1: PASS -- free-fall matches analytic to machine precision
+================================================================
+
+
+================================================================
+ STEP 2 -- spring-damper contact verification (friction OFF)
+================================================================
+
+  Exact equilibrium (independent Newton solve, 4 iterations):
+    leg loads        2937.62   2937.62   3934.77 N
+    leg deltas       0.04492   0.04492   0.06016 m
+    sum of loads     9810.00 N   (m*g = 9810.00 N)
+    mean delta       0.05000 m   (design target 0.05000)
+    pitch           0.003049 rad (0.1747 deg)
+    CG zD           -1.748975 m   (altitude 1.748975 m)
+
+----------------------------------------------------------------
+ 2A  drop from 0.2 m above first contact, settle under damping
+----------------------------------------------------------------
+  --- sanity checks: 2A settle ---
+    [PASS] no NaN/Inf in state history                    0 non-finite entries
+    [PASS] normal force never negative (no adhesion)      min(N) = 0.000e+00 N
+    [PASS] contact flag consistent with N > 0             0 mismatches
+    [PASS] penetration positive where in contact          min(delta|contact) = 1.436e-04 m
+    [PASS] friction never exceeds mu*N (Coulomb bound)    max(|F_t| - mu*N) = 0.000e+00 N
+  --- 2A settle: PASS ---
+    settled: zD = -1.748975 m, theta = 0.003049 rad (0.1747 deg)
+    settled leg loads :  2937.62   2937.62   3934.77 N
+    settled deltas    :  0.04492   0.04492   0.06016 m
+    mean delta        :  0.05000 m  (design target 0.05000)
+    [PASS] matches exact equilibrium: dN = 6.236e-06 N (tol 1e-2), dtheta = 1.760e-11 rad (tol 1e-7), dzD = 1.552e-11 m (tol 1e-7)
+
+----------------------------------------------------------------
+ 2B  static equilibrium: force balance, moment balance
+----------------------------------------------------------------
+    sum of normal forces : 9810.000002 N  vs  m*g = 9810.000000 N
+    [PASS] force balance : |sum(N) - m*g| = 1.875e-06 N   (tol 1e-3)
+    [PASS] net force     : |F| = 1.875e-06 N              (tol 1e-3)
+    [PASS] net moment    : |M| = 1.824e-05 N*m            (tol 1e-2)
+
+----------------------------------------------------------------
+ 2C  initialised at equilibrium, must not drift
+----------------------------------------------------------------
+  --- sanity checks: 2C hold ---
+    [PASS] no NaN/Inf in state history                    0 non-finite entries
+    [PASS] normal force never negative (no adhesion)      min(N) = 2.938e+03 N
+    [PASS] contact flag consistent with N > 0             0 mismatches
+    [PASS] penetration positive where in contact          min(delta|contact) = 4.492e-02 m
+    [PASS] friction never exceeds mu*N (Coulomb bound)    max(|F_t| - mu*N) = 0.000e+00 N
+  --- 2C hold: PASS ---
+    [PASS] position drift 2.271e-11 m, attitude drift 2.576e-11 rad (tol 1e-4)
+
+----------------------------------------------------------------
+ 2D  symmetric drop must produce ZERO roll and ZERO yaw
+----------------------------------------------------------------
+    max |roll|  = 0.000e+00 rad     max |p| = 0.000e+00 rad/s
+    max |yaw|   = 0.000e+00 rad     max |r| = 0.000e+00 rad/s
+    max |pitch| = 9.941e-03 rad  (legitimately nonzero, see header)
+    [PASS] roll and yaw identically zero (tol 1e-10)
+
+----------------------------------------------------------------
+ 2E  energy conservation, c = 0, legs never leave the ground
+----------------------------------------------------------------
+  --- sanity checks: 2E energy (continuous contact) ---
+    [PASS] no NaN/Inf in state history                    0 non-finite entries
+    [PASS] normal force never negative (no adhesion)      min(N) = 2.148e+03 N
+    [PASS] contact flag consistent with N > 0             0 mismatches
+    [PASS] penetration positive where in contact          min(delta|contact) = 3.285e-02 m
+    [PASS] friction never exceeds mu*N (Coulomb bound)    max(|F_t| - mu*N) = 0.000e+00 N
+    [PASS] all legs remain in contact                     0 leg-samples off ground
+    [PASS] energy conserved                               rel drift = 1.882e-13 (tol 1.0e-08), E0 = 17417.5742 J
+  --- 2E energy (continuous contact): PASS ---
+
+----------------------------------------------------------------
+ 2F  energy conservation, c = 0, full bounce (contact on/off)
+----------------------------------------------------------------
+  --- sanity checks: 2F energy (with bounce) ---
+    [PASS] no NaN/Inf in state history                    0 non-finite entries
+    [PASS] normal force never negative (no adhesion)      min(N) = 0.000e+00 N
+    [PASS] contact flag consistent with N > 0             0 mismatches
+    [PASS] penetration positive where in contact          min(delta|contact) = 8.081e-05 m
+    [PASS] friction never exceeds mu*N (Coulomb bound)    max(|F_t| - mu*N) = 0.000e+00 N
+    [PASS] energy conserved                               rel drift = 2.246e-06 (tol 1.0e-03), E0 = 19620.0000 J
+  --- 2F energy (with bounce): PASS ---
+    (looser tolerance than 2E is expected: RK4 loses order stepping
+     across the contact discontinuity at touchdown/liftoff)
+
+================================================================
+ STEP 2: PASS -- all contact and conservation criteria met
+================================================================
+
+
+================================================================
+ STEP 3 -- friction on a 5 deg incline
+================================================================
+
+  Analytic predictions (slope 5 deg, mu 0.60, v_bl 0.030 m/s):
+    holds?            tan(a) = 0.0875 < mu = 0.60  -> YES
+    sum of N          9772.6700 N   (m g cos a)
+    total friction    854.9978 N   (m g sin a, uphill)
+    creep speed       4.444424e-03 m/s downhill (v_bl tan a / mu)
+
+----------------------------------------------------------------
+ 3A  settle and hold on the slope (dt = 0.001)
+----------------------------------------------------------------
+  --- sanity checks: 3A settle on slope ---
+    [PASS] no NaN/Inf in state history                    0 non-finite entries
+    [PASS] normal force never negative (no adhesion)      min(N) = 2.534e+03 N
+    [PASS] contact flag consistent with N > 0             0 mismatches
+    [PASS] penetration positive where in contact          min(delta|contact) = 3.906e-02 m
+    [PASS] friction never exceeds mu*N (Coulomb bound)    max(|F_t| - mu*N) = -1.192e+03 N
+  --- 3A settle on slope: PASS ---
+    [PASS] validation dt = 0.001 is linearly stable: max|R(h*lambda)| = 0.9983
+    settled pitch 5.25630 deg  (slope 5 deg, offset 0.2563 deg from uneven leg loads)
+    leg loads  2769.97  2769.97  4232.73 N
+    [PASS] creep speed      4.444424e-03 m/s vs 4.444424e-03 analytic (rel err 2.40e-08, tol 1e-3)
+    [PASS] sum of N         9772.6700 vs 9772.6700 N  (|err| 4.41e-07, tol 1e-2)
+    [PASS] friction uphill  854.9978 vs 854.9978 N  (|err| 1.37e-06, tol 1e-2)
+    [PASS] force/moment balance: |F_inertial| 1.44e-06 N, |F_body| 1.44e-06 N, |M| 6.26e-06 N*m (tol 1e-2)
+    [PASS] holding, not sliding: max |F_t|/(mu N) = 0.1458  (must be < 1)
+    [PASS] symmetry: max |v, p, r, roll, yaw| = 0.00e+00  (tol 1e-10)
+
+----------------------------------------------------------------
+ 3B  slide to a stop from 3 m/s (dt = 0.001)
+----------------------------------------------------------------
+    Compared: distance until speed first drops below 0.10 m/s (>3x v_bl,
+    so the boundary layer plays no part). Tolerance 2%: the analytic result
+    assumes sum(N) = m g cos a throughout, which the pitch/heave transient
+    from sudden friction onset violates slightly.
+  --- sanity checks: 3B downhill (tail-first) ---
+    [PASS] no NaN/Inf in state history                    0 non-finite entries
+    [PASS] normal force never negative (no adhesion)      min(N) = 1.445e+03 N
+    [PASS] contact flag consistent with N > 0             0 mismatches
+    [PASS] penetration positive where in contact          min(delta|contact) = 2.281e-02 m
+    [PASS] friction never exceeds mu*N (Coulomb bound)    max(|F_t| - mu*N) = 9.095e-13 N
+  --- 3B downhill (tail-first): PASS ---
+    [PASS] downhill (tail-first)  decel 5.0086 m/s^2 | distance 0.8984 vs 0.8975 m (err 0.10%) | time 0.5780 vs 0.5790 s | sym 0.0e+00
+  --- sanity checks: 3B uphill (nose-first) ---
+    [PASS] no NaN/Inf in state history                    0 non-finite entries
+    [PASS] normal force never negative (no adhesion)      min(N) = 3.801e+02 N
+    [PASS] contact flag consistent with N > 0             0 mismatches
+    [PASS] penetration positive where in contact          min(delta|contact) = 8.132e-03 m
+    [PASS] friction never exceeds mu*N (Coulomb bound)    max(|F_t| - mu*N) = 4.547e-13 N
+  --- 3B uphill (nose-first): PASS ---
+    [PASS] uphill (nose-first)    decel 6.7186 m/s^2 | distance 0.6662 vs 0.6690 m (err 0.42%) | time 0.4350 vs 0.4316 s | sym 0.0e+00
+
+----------------------------------------------------------------
+ 3C  integrator stability: linear prediction vs SEEDED runs
+----------------------------------------------------------------
+    Each run starts from the 3A equilibrium with a 1e-4 m/s lateral velocity
+    seed. A stable integration of this dissipative system must shed it; an
+    unstable one amplifies it until friction saturates (bounded chatter).
+    Criterion: observed (seed grew?) must match predicted (max|R| > 1?).
+
+    case                        v_bl      dt |   lam_max    max|R|   pred |   growth    obs |       creep    analytic | match
+    ------------------------------------------------------------------------------------------------------------------------------
+    physics ref (UH-60 v_bl)    0.03  0.0010 |    1143.4     0.998 stable |   0.0613 stable |  4.4444e-03  4.4444e-03 | PASS
+    control run B (UH-60)       0.03  0.0100 |    1143.4       518 UNSTAB |      298 UNSTAB |  2.1238e-02  4.4444e-03 | PASS
+    old tight v_bl @ 0.001      0.01  0.0010 |    3453.8      2.57 UNSTAB |     8.14 UNSTAB |  1.5637e-03  1.4581e-03 | PASS
+    old tight v_bl @ 0.0005     0.01  0.0005 |    3453.8     0.999 stable |   0.0704 stable |  1.4478e-03  1.4581e-03 | PASS
+    loosened until stable       0.15  0.0100 |     243.6     0.978 stable |   0.0251 stable |  2.1905e-02  2.1872e-02 | PASS
+
+    Old tight v_bl (0.01) at dt 0.001 with NO seed:
+      creep 1.447836e-03 vs 1.458144e-03 analytic, max lateral velocity 0.0e+00
+      -> lateral motion stays EXACTLY zero: symmetry never excites the unstable
+         mode, so an unseeded test cannot detect the instability. (Creep is still
+         converging from the v_bl = 0.0305 starting equilibrium.)
+
+    Smallest stable v_bl (bisection on max|R| = 1), and the creep it implies:
+      dt = 0.001   v_bl >= 0.0124 m/s  ->  creep >= 1.81 mm/s
+      dt = 0.01    v_bl >= 0.1303 m/s  ->  creep >= 18.99 mm/s
+
+  figure written: test3C_integrator_stability_seeded_runs.png
+
+================================================================
+ STEP 3: PASS -- friction statics, sliding, and stability all verified
+================================================================
+
+----------------------------------------------------------------
+ Generating figures
+----------------------------------------------------------------
+  figures written: test2A_damped_drop_to_equilibrium_{position,attitude,gear_loads,energy}.png
+  figures written: test2E_undamped_oscillation_in_contact_{position,attitude,gear_loads,energy}.png
+  figures written: test2F_undamped_repeated_bounce_{position,attitude,gear_loads,energy}.png
+  figures written: test3A_hold_on_5deg_slope_{position,attitude,gear_loads,energy}.png
+  figures written: test3B_slide_downhill_to_stop_{position,attitude,gear_loads,energy}.png
+  figures written: test3B_slide_uphill_to_stop_{position,attitude,gear_loads,energy}.png
+
+################################################################
+ OVERALL: PASS -- steps 1, 2 and 3 complete
+################################################################

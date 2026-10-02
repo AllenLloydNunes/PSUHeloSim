@@ -1,0 +1,132 @@
+﻿================================================================
+ dt stability sweep -- current model on a 5 deg incline
+================================================================
+  mu = 0.60, v_bl = 0.03048 m/s, analytic creep = 4.4444 mm/s
+
+  Linear prediction (RK4, |R(h*lambda)| = 1):
+    block coupling at symmetric equilibrium: 0.00e+00 (should be ~0)
+    lateral/roll block      fastest |lambda| =  1143.4 rad/s  ->  dt_max = 2.4359 ms
+    longitudinal/pitch block fastest |lambda| =   265.8 rad/s  ->  dt_max = 10.4793 ms
+    full model                                        ->  dt_max = 2.4359 ms
+
+----------------------------------------------------------------
+ LATERAL seed (true limit)
+----------------------------------------------------------------
+      dt [ms] |     growth |    result | creep [mm/s]
+         1.00 |     0.0613 |    stable |       4.4444
+         1.10 |     0.0613 |    stable |       4.4444
+         1.20 |     0.0613 |    stable |       4.4444
+         1.30 |     0.0613 |    stable |       4.4444
+         1.40 |     0.0613 |    stable |       4.4444
+         1.50 |     0.0613 |    stable |       4.4444
+         1.60 |     0.0613 |    stable |       4.4444
+         1.70 |     0.0613 |    stable |       4.4444
+         1.80 |     0.0613 |    stable |       4.4444
+         1.90 |     0.0613 |    stable |       4.4444
+         2.00 |     0.0613 |    stable |       4.4444
+         2.10 |     0.0613 |    stable |       4.4444
+         2.20 |     0.0613 |    stable |       4.4444
+         2.30 |     0.0612 |    stable |       4.4444
+         2.40 |     0.0613 |    stable |       4.4444
+         2.50 |       12.3 |  UNSTABLE |       4.5089
+         2.60 |       7.36 |  UNSTABLE |       4.5984
+         2.70 |        2.3 |  UNSTABLE |       4.6757
+         2.80 |       4.95 |  UNSTABLE |       4.7429
+         2.90 |       15.8 |  UNSTABLE |       4.7114
+         3.00 |       23.3 |  UNSTABLE |       4.7780
+         3.10 |       29.1 |  UNSTABLE |       4.7642
+         3.20 |       59.2 |  UNSTABLE |       4.7888
+         3.30 |       54.8 |  UNSTABLE |       4.7564
+         3.40 |       48.7 |  UNSTABLE |       4.8375
+         3.50 |       42.2 |  UNSTABLE |       4.8769
+         3.60 |       63.8 |  UNSTABLE |       4.9939
+         3.70 |       56.5 |  UNSTABLE |       5.0531
+         3.80 |       36.7 |  UNSTABLE |       5.1331
+         3.90 |       39.5 |  UNSTABLE |       5.2754
+         4.00 |         93 |  UNSTABLE |       5.3343
+         4.50 |        140 |  UNSTABLE |       9.3631
+         5.00 |        155 |  UNSTABLE |      10.4200
+         5.50 |        170 |  UNSTABLE |      11.4874
+         6.00 |        185 |  UNSTABLE |      12.5529
+         6.50 |        199 |  UNSTABLE |      13.6264
+         7.00 |        214 |  UNSTABLE |      14.7012
+         7.50 |        228 |  UNSTABLE |      15.7809
+         8.00 |        243 |  UNSTABLE |      16.8641
+         8.50 |        257 |  UNSTABLE |      17.9525
+         9.00 |        270 |  UNSTABLE |      19.0445
+         9.50 |        284 |  UNSTABLE |      20.1408
+        10.00 |        298 |  UNSTABLE |      21.2381
+        10.50 |        311 |  UNSTABLE |      22.3439
+        11.00 |        324 |  UNSTABLE |      23.4532
+        11.50 |        336 |  UNSTABLE |      24.5665
+        12.00 |        349 |  UNSTABLE |      25.6851
+
+    simulated boundary : dt = 2.4368 ms  (bisection bracket +/- 3.1e-03 us; the
+                         growth criterion itself resolves ~1 us near the boundary)
+    linear prediction  : dt = 2.4359 ms  (difference +0.03%)
+
+----------------------------------------------------------------
+ LONGITUDINAL seed (symmetric test)
+----------------------------------------------------------------
+      dt [ms] |     growth |    result | creep [mm/s]
+         1.00 |    0.00975 |    stable |       4.4448
+         1.10 |    0.00975 |    stable |       4.4448
+         1.20 |    0.00975 |    stable |       4.4448
+         1.30 |    0.00975 |    stable |       4.4448
+         1.40 |    0.00975 |    stable |       4.4448
+         1.50 |    0.00975 |    stable |       4.4448
+         1.60 |    0.00975 |    stable |       4.4448
+         1.70 |    0.00975 |    stable |       4.4448
+         1.80 |    0.00975 |    stable |       4.4448
+         1.90 |    0.00975 |    stable |       4.4448
+         2.00 |    0.00975 |    stable |       4.4448
+         2.10 |    0.00975 |    stable |       4.4448
+         2.20 |    0.00975 |    stable |       4.4448
+         2.30 |    0.00975 |    stable |       4.4448
+         2.40 |    0.00975 |    stable |       4.4448
+         2.50 |    0.00975 |    stable |       4.4448
+         2.60 |    0.00975 |    stable |       4.4448
+         2.70 |    0.00975 |    stable |       4.4448
+         2.80 |    0.00975 |    stable |       4.4448
+         2.90 |    0.00975 |    stable |       4.4448
+         3.00 |    0.00975 |    stable |       4.4448
+         3.10 |    0.00975 |    stable |       4.4448
+         3.20 |    0.00975 |    stable |       4.4448
+         3.30 |    0.00975 |    stable |       4.4448
+         3.40 |    0.00975 |    stable |       4.4448
+         3.50 |    0.00975 |    stable |       4.4448
+         3.60 |    0.00975 |    stable |       4.4448
+         3.70 |    0.00975 |    stable |       4.4448
+         3.80 |    0.00975 |    stable |       4.4448
+         3.90 |    0.00975 |    stable |       4.4448
+         4.00 |    0.00975 |    stable |       4.4447
+         4.50 |    0.00975 |    stable |       4.4447
+         5.00 |    0.00975 |    stable |       4.4447
+         5.50 |    0.00975 |    stable |       4.4448
+         6.00 |    0.00975 |    stable |       4.4447
+         6.50 |    0.00975 |    stable |       4.4448
+         7.00 |    0.00975 |    stable |       4.4447
+         7.50 |    0.00975 |    stable |       4.4448
+         8.00 |    0.00975 |    stable |       4.4447
+         8.50 |    0.00975 |    stable |       4.4448
+         9.00 |    0.00975 |    stable |       4.4447
+         9.50 |    0.00975 |    stable |       4.4447
+        10.00 |    0.00974 |    stable |       4.4447
+        10.50 |        3.5 |  UNSTABLE |       4.1558
+        11.00 |       53.6 |  UNSTABLE |      -0.9024
+        11.50 |         50 |  UNSTABLE |      -0.5321
+        12.00 |       46.3 |  UNSTABLE |      -0.1505
+
+    simulated boundary : dt = 10.4822 ms  (bisection bracket +/- 1.5e-02 us; the
+                         growth criterion itself resolves ~1 us near the boundary)
+    linear prediction  : dt = 10.4793 ms  (difference +0.03%)
+
+================================================================
+ SUMMARY
+================================================================
+  Largest stable dt, real (laterally seeded) : 2.437 ms   (linear 2.436 ms)
+  Largest stable dt, symmetric test only     : 10.482 ms   (linear 10.479 ms)
+  Margin at the physics reference dt = 1 ms  : 2.44x
+  Target ML dt = 10 ms is 4.1x beyond the real limit
+
+  figure written: figures/sweep_dt_stability.png

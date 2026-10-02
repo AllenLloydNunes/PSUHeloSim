@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Simplified Landing Model — Progress Report</title>
+<style>
+  @page { size: Letter; margin: 0.75in 0.8in 0.8in 0.8in; }
+  html { font-family: "Segoe UI", Calibri, Arial, sans-serif; font-size: 10.5pt; color: #1b1f24; }
+  body { margin: 0; line-height: 1.42; }
+  h1 { font-size: 22pt; margin: 0 0 4pt 0; color: #0b2a4a; letter-spacing: -0.3pt; }
+  h2 { font-size: 14pt; color: #0b2a4a; border-bottom: 1.5pt solid #0b2a4a; padding-bottom: 2pt;
+       margin: 20pt 0 8pt 0; page-break-after: avoid; }
+  h3 { font-size: 11.5pt; color: #173f66; margin: 13pt 0 5pt 0; page-break-after: avoid; }
+  p  { margin: 0 0 7pt 0; }
+  ul, ol { margin: 0 0 7pt 0; padding-left: 18pt; }
+  li { margin-bottom: 3pt; }
+  code, .mono { font-family: Consolas, "Courier New", monospace; font-size: 9.2pt; }
+  pre { font-family: Consolas, "Courier New", monospace; font-size: 8.8pt; background: #f4f6f8;
+        border: 0.6pt solid #d4dae0; border-radius: 3pt; padding: 6pt 8pt; margin: 0 0 8pt 0;
+        white-space: pre-wrap; page-break-inside: avoid; }
+  table { border-collapse: collapse; width: 100%; margin: 4pt 0 9pt 0; font-size: 9.4pt;
+          page-break-inside: avoid; }
+  th, td { border: 0.6pt solid #c3ccd5; padding: 3pt 6pt; text-align: left; vertical-align: top; }
+  th { background: #e7edf3; color: #0b2a4a; font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.hl td { background: #fff6dc; }
+  .pass { color: #1f7a3a; font-weight: 600; }
+  .fail { color: #b3261e; font-weight: 600; }
+  .sub  { color: #55616d; font-size: 10pt; }
+  .meta { color: #55616d; font-size: 9.5pt; margin-bottom: 12pt; }
+  .callout { border-left: 3pt solid #c98a00; background: #fff9e8; padding: 6pt 9pt; margin: 6pt 0 10pt 0;
+             page-break-inside: avoid; }
+  .callout.blue { border-left-color: #1f5f99; background: #eef4fa; }
+  .callout.green { border-left-color: #1f7a3a; background: #eef7f0; }
+  .callout p:last-child, .callout ul:last-child { margin-bottom: 0; }
+  figure { margin: 6pt 0 12pt 0; page-break-inside: avoid; text-align: center; }
+  figure img { max-width: 100%; max-height: 4.1in; width: auto; height: auto; border: 0.5pt solid #d4dae0; }
+  figure.wide img { max-height: 4.6in; }
+  figcaption { font-size: 9pt; color: #37414b; text-align: left; margin-top: 4pt; }
+  figcaption b { color: #0b2a4a; }
+  .toc { columns: 2; column-gap: 24pt; font-size: 10pt; margin-bottom: 6pt; }
+  .toc div { margin-bottom: 2pt; }
+  .pb { page-break-before: always; }
+  .kpis { display: flex; gap: 8pt; margin: 8pt 0 10pt 0; }
+  .kpi { flex: 1; border: 0.6pt solid #c3ccd5; border-radius: 4pt; padding: 6pt 8pt; background: #f8fafc; }
+  .kpi .v { font-size: 15pt; font-weight: 700; color: #0b2a4a; line-height: 1.1; }
+  .kpi .l { font-size: 8.6pt; color: #55616d; }
+  svg text { font-family: "Segoe UI", Calibri, Arial, sans-serif; }
+</style>
+</head>
+<body>
+
+<h1>Simplified Landing Dynamics Model</h1>
+<div class="sub">Progress report — steps 1–3: rigid-body dynamics, spring-damper contact, friction, and integrator stability</div>
+<div class="meta">18 September 2026 &nbsp;·&nbsp; HeloSimWork / <span class="mono">SimpleLandingModel</span> &nbsp;·&nbsp;
+MATLAB R2026a &nbsp;·&nbsp; All numbers and figures from a single fresh run of <span class="mono">run_all_tests</span> (log: <span class="mono">report_run_log.txt</span>)</div>
+
+<div class="toc">
+  <div>1. Summary</div>
+  <div>2. Purpose and context</div>
+  <div>3. Model description</div>
+  <div>4. Verification approach</div>
+  <div>5. Step 1 — free fall</div>
+  <div>6. Step 2 — spring-damper contact</div>
+  <div>7. Step 3 — friction on a 5° incline</div>
+  <div>8. Integrator stability finding</div>
+  <div>9. Comparison with the UH-60 model</div>
+  <div>10. Corrections made along the way</div>
+  <div>11. Next steps</div>
+  <div>Appendix — files and how to run</div>
+</div>
+
+<h2>1. Summary</h2>
+
+<div class="kpis">
+  <div class="kpi"><div class="v pass">3 / 3</div><div class="l">verification suites passing (steps 1, 2, 3)</div></div>
+  <div class="kpi"><div class="v">1.3e-13 m</div><div class="l">free-fall error vs. analytic (machine precision)</div></div>
+  <div class="kpi"><div class="v">2.4e-8</div><div class="l">relative error, friction creep vs. analytic</div></div>
+  <div class="kpi"><div class="v">~21 mm/s</div><div class="l">physics-friction creep at dt = 0.01 (target: 4.4)</div></div>
+</div>
+
+<p>A minimal 6-DOF landing simulator was built from scratch in MATLAB as a controlled testbed for
+comparing <b>physics-based friction at dt = 0.001 s</b> against a future <b>machine-learning friction
+model at dt = 0.01 s</b>. Steps 1–3 of the build plan are complete and verified:</p>
+<ul>
+  <li><b>Rigid-body EOM and gravity</b> match the analytic free-fall solution to 10<sup>-13</sup> m, including a tilted-body case that validates the rotation matrix and gravity transform together.</li>
+  <li><b>Spring-damper ground contact</b> settles to an independently computed static equilibrium to 6×10<sup>-6</sup> N, conserves energy to 10<sup>-13</sup> when undamped, and keeps roll and yaw <i>identically</i> zero under a symmetric drop.</li>
+  <li><b>Regularized Coulomb friction on a 5° incline</b> reproduces the analytic hold, creep, and slide-to-stop results to within 0.42% (slides) and 2×10<sup>-8</sup> (steady creep).</li>
+</ul>
+
+<div class="callout">
+<p><b>Key finding.</b> The build plan's timestep analysis considered friction resisting <i>translation</i>
+only. Because the feet sit 1.8 m below the CG, friction also resists <i>roll</i>, and the roll inertia is
+small. The true stiffest friction mode is ~6× faster than planned (−3,454 rad/s at the original
+boundary layer), which made the planned dt = 0.001 physics reference <b>numerically unstable</b>. A
+laterally symmetric test cannot detect this — it passes perfectly — so the stability test seeds lateral
+motion deliberately.</p>
+<p><b>Resolution:</b> the friction boundary layer was raised to match the UH-60 model's value
+(<span class="mono">LG_VBL</span> = 0.1 ft/s = 0.03048 m/s). The dt = 0.001 reference is now stable and verified.
+At dt = 0.01, physics friction remains unstable and chatters at ~21 mm/s of creep regardless of the
+requested boundary layer — the concrete gap an ML model at dt = 0.01 would need to close (target 4.4 mm/s).</p>
+</div>
+
+<h2>2. Purpose and context</h2>
+<p>The parent project uses the PSUHeloSim UH-60 flight dynamics model. Its real-time simulator cannot run
+below dt ≈ 0.01 s without missing frame deadlines, but ground-contact and friction fidelity require a much
+smaller step. The research question is whether a learned friction model running at the coarse step can
+match physics friction running at the fine step.</p>
+<p>The full UH-60 model is too coupled to answer that cleanly — a difference in output could come from the
+friction model or from any of a dozen interacting subsystems. This testbed strips the problem to a rigid body,
+three contact points, a planar floor, and friction, so that friction is the <i>only</i> source of numerical
+stiffness and any measured difference is attributable to it.</p>
+
+<h2>3. Model description</h2>
+
+<h3>3.1 Geometry and parameters</h3>
+<p>A rectangular box stands in for the fuselage, with three legs in a helicopter-like tricycle stance: two
+forward legs splayed outboard and one aft. Legs are <b>rigid struts with a compliant foot</b> (penalty
+contact) — there is no unsprung mass. This is deliberate: it keeps the normal-direction dynamics soft
+(√(3k/m) ≈ 14 rad/s) so that friction regularization is the only stiff element.</p>
+
+<figure>
+<svg viewBox="0 0 720 230" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0b2a4a"/></marker>
+  </defs>
+  <!-- SIDE VIEW: x right (forward), z down. 30 px/m. CG at (190,95). -->
+  <text x="190" y="18" text-anchor="middle" font-size="12" font-weight="600" fill="#0b2a4a">Side view</text>
+  <rect x="40" y="65" width="300" height="60" fill="#e7edf3" stroke="#173f66" stroke-width="1.2"/>
+  <line x1="250" y1="125" x2="250" y2="149" stroke="#173f66" stroke-width="2.5"/>
+  <line x1="100" y1="125" x2="100" y2="149" stroke="#173f66" stroke-width="2.5"/>
+  <circle cx="250" cy="149" r="4" fill="#c98a00"/>
+  <circle cx="100" cy="149" r="4" fill="#c98a00"/>
+  <line x1="20" y1="153" x2="360" y2="153" stroke="#55616d" stroke-width="1"/>
+  <g stroke="#9aa6b2" stroke-width="0.8">
+    <line x1="30" y1="153" x2="22" y2="161"/><line x1="70" y1="153" x2="62" y2="161"/>
+    <line x1="110" y1="153" x2="102" y2="161"/><line x1="150" y1="153" x2="142" y2="161"/>
+    <line x1="190" y1="153" x2="182" y2="161"/><line x1="230" y1="153" x2="222" y2="161"/>
+    <line x1="270" y1="153" x2="262" y2="161"/><line x1="310" y1="153" x2="302" y2="161"/>
+    <line x1="350" y1="153" x2="342" y2="161"/></g>
+  <text x="355" y="170" text-anchor="end" font-size="10" fill="#55616d">ground</text>
+  <circle cx="190" cy="95" r="5" fill="#0b2a4a"/>
+  <text x="182" y="88" text-anchor="end" font-size="10" fill="#0b2a4a">CG</text>
+  <line x1="190" y1="95" x2="228" y2="95" stroke="#0b2a4a" stroke-width="1.4" marker-end="url(#ar)"/>
+  <text x="232" y="92" font-size="10" fill="#0b2a4a">x<tspan font-size="8">b</tspan> (fwd)</text>
+  <line x1="190" y1="95" x2="190" y2="120" stroke="#0b2a4a" stroke-width="1.4" marker-end="url(#ar)"/>
+  <text x="194" y="120" font-size="10" fill="#0b2a4a">z<tspan font-size="8">b</tspan> (down)</text>
+  <text x="250" y="178" text-anchor="middle" font-size="10" fill="#37414b">front legs, x = +2 m</text>
+  <text x="100" y="178" text-anchor="middle" font-size="10" fill="#37414b">aft leg, x = −3 m</text>
+  <line x1="370" y1="95" x2="370" y2="149" stroke="#55616d" stroke-width="0.8"/>
+  <line x1="365" y1="95" x2="375" y2="95" stroke="#55616d" stroke-width="0.8"/>
+  <line x1="365" y1="149" x2="375" y2="149" stroke="#55616d" stroke-width="0.8"/>
+  <text x="378" y="126" font-size="10" fill="#37414b">1.8 m</text>
+  <text x="190" y="205" text-anchor="middle" font-size="10" fill="#55616d">box 10 m long × 2 m tall</text>
+
+  <!-- TOP VIEW: x right, y down on page (looking down). 30 px/m. CG at (560,110). -->
+  <text x="560" y="18" text-anchor="middle" font-size="12" font-weight="600" fill="#0b2a4a">Top view (looking down)</text>
+  <rect x="410" y="80" width="300" height="60" fill="#e7edf3" stroke="#173f66" stroke-width="1.2"/>
+  <circle cx="620" cy="65" r="5" fill="#c98a00"/>
+  <circle cx="620" cy="155" r="5" fill="#c98a00"/>
+  <circle cx="470" cy="110" r="5" fill="#c98a00"/>
+  <line x1="620" y1="80" x2="620" y2="65" stroke="#173f66" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <line x1="620" y1="140" x2="620" y2="155" stroke="#173f66" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <text x="611" y="62" text-anchor="end" font-size="10" fill="#37414b">front-left (+2, −1.5)</text>
+  <text x="611" y="166" text-anchor="end" font-size="10" fill="#37414b">front-right (+2, +1.5)</text>
+  <text x="470" y="100" text-anchor="middle" font-size="10" fill="#37414b">aft (−3, 0)</text>
+  <circle cx="560" cy="110" r="5" fill="#0b2a4a"/>
+  <line x1="560" y1="110" x2="598" y2="110" stroke="#0b2a4a" stroke-width="1.4" marker-end="url(#ar)"/>
+  <text x="590" y="124" font-size="10" fill="#0b2a4a">x<tspan font-size="8">b</tspan></text>
+  <line x1="560" y1="110" x2="560" y2="135" stroke="#0b2a4a" stroke-width="1.4" marker-end="url(#ar)"/>
+  <text x="547" y="135" font-size="10" fill="#0b2a4a">y<tspan font-size="8">b</tspan></text>
+  <text x="560" y="205" text-anchor="middle" font-size="10" fill="#55616d">box 2 m wide; feet splayed outboard to ±1.5 m</text>
+</svg>
+<figcaption><b>Figure 1.</b> Model geometry (to scale, 30 px/m). Foot coordinates are in the body frame
+(x forward, y right, z down, origin at CG). Note Σx<sub>i</sub> = +1 m: the leg triangle is not centred under
+the CG, which produces unequal static leg loads and a small nose-up pitch (Section 6).</figcaption>
+</figure>
+
+<table>
+  <tr><th>Parameter</th><th class="num">Value</th><th>Basis</th></tr>
+  <tr><td>Mass <i>m</i></td><td class="num">1000 kg</td><td>Round number; not a scale model of the UH-60</td></tr>
+  <tr><td>Inertia I<sub>xx</sub>, I<sub>yy</sub>, I<sub>zz</sub></td><td class="num">667, 8667, 8667 kg·m²</td><td>Solid box 10 × 2 × 2 m; I<sub>yy</sub>/I<sub>xx</sub> = 13 (rolls far more easily than it pitches)</td></tr>
+  <tr><td>Leg stiffness <i>k</i> (each)</td><td class="num">6.54×10⁴ N/m</td><td>Sized for 5 cm mean static deflection: k = mg / (3 × 0.05)</td></tr>
+  <tr><td>Leg damping <i>c</i> (each)</td><td class="num">2800 N·s/m</td><td>Heave damping ratio ζ = 0.30 (visibly underdamped, errors easy to see)</td></tr>
+  <tr><td>Friction coefficient μ</td><td class="num">0.6</td><td>Dry rubber-like; UH-60 model uses 0.5 (see Section 11)</td></tr>
+  <tr class="hl"><td>Friction boundary layer v<sub>bl</sub></td><td class="num">0.03048 m/s</td><td><b>= 0.1 ft/s, matched to UH-60 <span class="mono">LG_VBL</span></b> (was 0.01 m/s; Section 8)</td></tr>
+  <tr><td>Physics / ML timesteps</td><td class="num">0.001 / 0.01 s</td><td>Study design</td></tr>
+  <tr><td>Integrator</td><td class="num">fixed-step RK4</td><td>Hand-written: the study is <i>about</i> dt, so it must be explicit, not solver-chosen</td></tr>
+</table>
+
+<h3>3.2 Frames, state, and equations of motion</h3>
+<p><b>Inertial frame</b> is NED (x North, y East, <b>z down</b>); altitude = −z. <b>Body frame</b> is x forward,
+y right, z down, origin at the CG; Euler sequence 3-2-1. SI units throughout. The state has 12 elements:</p>
+<pre>x = [ u v w | p q r | phi theta psi | xN yE zD ]     body velocity | body rates | Euler angles | NED position
+
+Vdot_b     = F_b / m  -  omega x V_b                          (Newton, rotating frame)
+omegadot_b = I^-1 ( M_b  -  omega x (I omega) )              (Euler's equations)
+phidot     = p + sin(phi) tan(theta) q + cos(phi) tan(theta) r
+thetadot   =     cos(phi) q            - sin(phi) r
+psidot     =    (sin(phi) q + cos(phi) r) / cos(theta)
+Pdot_i     = R_b2i V_b
+F_gravity_b = R_b2i' [0; 0; m g]      (derived from R, never written separately)</pre>
+
+<h3>3.3 Contact and friction</h3>
+<p>The ground is a plane with unit normal <b>n</b> (pointing into the ground). For each leg, every derivative evaluation:</p>
+<pre>P_foot   = P_cg + R_b2i p_foot_b                      foot position, inertial
+delta    = n . (P_foot - p0)                           penetration along the terrain normal (> 0 = contact)
+V_foot   = R_b2i (V_b + omega x p_foot_b)
+N        = max( k delta + c (n . V_foot), 0 )          ground pushes, never pulls
+v_t      = V_foot - (n . V_foot) n                     tangential slip velocity
+F_t      = -mu N v_t / max(|v_t|, v_bl)                regularized Coulomb friction  (swappable)
+F_foot_b = R_b2i' ( F_t - N n )                        ONE inertial vector, rotated to body BEFORE summing
+M_foot_b = p_foot_b x F_foot_b                         moment about the CONTACT POINT</pre>
+<p>The last two lines carry forward the lesson from the UH-60 <span class="mono">LandingGear.m</span> bug found
+earlier in this project, where a terrain-frame friction force was concatenated with a body-frame strut force
+and the friction moment was taken about the axle rather than the contact patch. The friction model is passed
+in as a function handle, so the ML comparison is a one-line change with every other part of the model held
+bit-for-bit identical.</p>
+
+<h2>4. Verification approach</h2>
+<p>The guiding rule is <b>use an exact pass criterion wherever exactness is physically achievable</b>, because
+a tight tolerance surfaces mistakes that a loose one hides. Three examples: RK4 integrates constant acceleration
+exactly, so free fall is checked at machine precision; the leg geometry is exactly laterally symmetric, so roll
+and yaw under a symmetric drop must be <i>identically</i> zero; and energy conservation is checked separately in
+a smooth regime and across contact discontinuities so the two error sources can be told apart. Every run also
+passes a common set of safety checks: no NaN/Inf, no adhesion (N ≥ 0), contact flags consistent with force,
+and friction never exceeding μN.</p>
+
+<h2>5. Step 1 — free fall (contact disabled)</h2>
+<p>Pass criterion: the inertial trajectory must match P(t) = P(0) + V(0)t + ½[0, 0, g]t² to machine precision.</p>
+<table>
+  <tr><th>Case</th><th class="num">Max position error</th><th class="num">Attitude drift</th><th class="num">Body rates</th><th>Result</th></tr>
+  <tr><td>1a — level, at rest</td><td class="num">1.33×10⁻¹³ m</td><td class="num">0</td><td class="num">0</td><td class="pass">PASS</td></tr>
+  <tr><td>1b — level, translating</td><td class="num">1.33×10⁻¹³ m</td><td class="num">0</td><td class="num">0</td><td class="pass">PASS</td></tr>
+  <tr><td>1c — tilted (20°, −15°, 30°), translating</td><td class="num">2.78×10⁻¹³ m</td><td class="num">0</td><td class="num">0</td><td class="pass">PASS</td></tr>
+</table>
+<p>Case 1c is the meaningful one: with gravity resolved through a rotated body frame and no moments acting,
+the inertial acceleration must still be exactly [0, 0, g] and the attitude must stay frozen. That validates the
+rotation matrix and the gravity transform simultaneously.</p>
+
+<h2>6. Step 2 — spring-damper contact (friction off)</h2>
+<p>The static equilibrium is not level. With feet at x = +2, +2, −3 m, equal leg loads would leave a 3270 N·m
+pitch moment, so the aft leg carries more load and the body sits slightly nose-up. The exact equilibrium was
+solved independently of the model code (Newton iteration on hand-derived force and moment balance) and the
+simulation compared against it:</p>
+<table>
+  <tr><th>Check</th><th class="num">Result</th><th class="num">Tolerance</th><th></th></tr>
+  <tr><td>Leg loads at equilibrium (FL, FR, aft)</td><td class="num">2937.62, 2937.62, 3934.77 N</td><td class="num">—</td><td></td></tr>
+  <tr><td>Penetrations (FL, FR, aft); mean</td><td class="num">44.92, 44.92, 60.16 mm; 50.00 mm</td><td class="num">—</td><td></td></tr>
+  <tr><td>Equilibrium pitch</td><td class="num">0.003049 rad (0.175°)</td><td class="num">—</td><td></td></tr>
+  <tr><td>2A — settled state vs. exact equilibrium</td><td class="num">ΔN 6.2×10⁻⁶ N, Δθ 1.8×10⁻¹¹ rad</td><td class="num">10⁻², 10⁻⁷</td><td class="pass">PASS</td></tr>
+  <tr><td>2B — force balance |ΣN − mg|</td><td class="num">1.9×10⁻⁶ N</td><td class="num">10⁻³</td><td class="pass">PASS</td></tr>
+  <tr><td>2B — moment balance |M|</td><td class="num">1.8×10⁻⁵ N·m</td><td class="num">10⁻²</td><td class="pass">PASS</td></tr>
+  <tr><td>2C — hold at equilibrium for 2 s</td><td class="num">2.3×10⁻¹¹ m, 2.6×10⁻¹¹ rad</td><td class="num">10⁻⁴</td><td class="pass">PASS</td></tr>
+  <tr><td>2D — roll and yaw, symmetric drop</td><td class="num">identically 0</td><td class="num">10⁻¹⁰</td><td class="pass">PASS</td></tr>
+  <tr><td>2E — energy drift, c = 0, continuous contact</td><td class="num">1.9×10⁻¹³ (relative)</td><td class="num">10⁻⁸</td><td class="pass">PASS</td></tr>
+  <tr><td>2F — energy drift, c = 0, repeated bounce</td><td class="num">2.2×10⁻⁶ (relative)</td><td class="num">10⁻³</td><td class="pass">PASS</td></tr>
+</table>
+
+<figure>
+<img src="../figures/test2A_damped_drop_to_equilibrium_gear_loads.png" alt="Test 2A gear loads">
+<figcaption><b>Figure 2.</b> Test 2A — damped drop from 0.2 m above first contact. Force is zero until touchdown
+at ~0.2 s; the aft leg peaks and settles higher than the front legs; the response settles by ~2 s. The
+front-left trace is completely hidden beneath front-right — visual confirmation that the lateral symmetry
+holds exactly.</figcaption>
+</figure>
+
+<figure>
+<img src="../figures/test2F_undamped_repeated_bounce_energy.png" alt="Test 2F energy budget">
+<figcaption><b>Figure 3.</b> Test 2F — undamped repeated bounce. Top: energy exchanges between gravity, kinetic
+and spring potential with no decay. Bottom: total-energy error changes only in <i>steps at the contact on/off
+instants</i> and is flat in between (±0.04 J out of 19,620 J). This localizes the 2.2×10⁻⁶ drift to fixed-step
+integration across the contact discontinuity rather than to the integrator generally — consistent with the
+1.9×10⁻¹³ drift in the smooth continuous-contact case (2E).</figcaption>
+</figure>
+
+<h2>7. Step 3 — friction on a 5° incline</h2>
+<p>The contact model was generalized from a flat z = 0 floor to an arbitrary plane. On flat ground the
+generalized model reproduces every step-1 and step-2 result <b>bit-identically</b>. The incline rises toward
+North; μ = 0.6, v<sub>bl</sub> = 0.03048 m/s. Validation runs use dt = 0.001, but only after a linearization
+gate confirms that step is stable for the configured boundary layer (max |R(hλ)| = 0.998 &lt; 1).</p>
+
+<div class="callout blue">
+<p><b>Why regularized friction creeps.</b> To generate the downhill-resisting force mg sin α inside the
+boundary layer, the law F = μN·v/v<sub>bl</sub> needs a non-zero sliding speed. In steady state this gives an
+exact prediction: <b>v<sub>creep</sub> = v<sub>bl</sub> tan α / μ = 4.444 mm/s</b>. The vehicle cannot hold
+perfectly still — this is the regularization artifact the whole study is about.</p>
+</div>
+
+<h3>7.1 Test 3A — settle and hold</h3>
+<table>
+  <tr><th>Check</th><th class="num">Simulated</th><th class="num">Analytic</th><th class="num">Error</th><th></th></tr>
+  <tr><td>Creep speed (downhill)</td><td class="num">4.444424×10⁻³ m/s</td><td class="num">4.444424×10⁻³ m/s</td><td class="num">2.4×10⁻⁸ rel.</td><td class="pass">PASS</td></tr>
+  <tr><td>Sum of normal forces</td><td class="num">9772.6700 N</td><td class="num">mg cos α = 9772.6700 N</td><td class="num">4.4×10⁻⁷ N</td><td class="pass">PASS</td></tr>
+  <tr><td>Total friction, uphill</td><td class="num">854.9978 N</td><td class="num">mg sin α = 854.9978 N</td><td class="num">1.4×10⁻⁶ N</td><td class="pass">PASS</td></tr>
+  <tr><td>Force / moment balance</td><td class="num">1.4×10⁻⁶ N / 6.3×10⁻⁶ N·m</td><td class="num">0</td><td class="num">tol 10⁻²</td><td class="pass">PASS</td></tr>
+  <tr><td>Holding, not sliding: max |F<sub>t</sub>| / μN</td><td class="num">0.146</td><td class="num">&lt; 1</td><td class="num">—</td><td class="pass">PASS</td></tr>
+  <tr><td>Roll, yaw, v, p, r</td><td class="num">identically 0</td><td class="num">0</td><td class="num">tol 10⁻¹⁰</td><td class="pass">PASS</td></tr>
+</table>
+<p>The body settles at 5.256° pitch — the 5° slope plus a 0.256° offset from the uneven leg loads, which the
+uphill friction acting below the CG increases relative to flat ground (leg loads 2769.97 / 2769.97 / 4232.73 N).</p>
+
+<figure>
+<img src="../figures/test3A_hold_on_5deg_slope_gear_loads.png" alt="Test 3A gear loads">
+<figcaption><b>Figure 4.</b> Test 3A — settle and hold on the 5° incline. Middle panel: each leg's friction
+(solid) sits well below its Coulomb limit μN (dashed) at a ratio of 0.146 = v<sub>creep</sub>/v<sub>bl</sub>,
+the signature of holding inside the boundary layer rather than sliding.</figcaption>
+</figure>
+
+<h3>7.2 Test 3B — slide to a stop from 3 m/s</h3>
+<p>Distance is measured until speed first drops below 0.10 m/s — more than 3× v<sub>bl</sub>, so the boundary
+layer plays no part. The 2% tolerance reflects the quasi-static assumption ΣN = mg cos α, which the pitch/heave
+transient from sudden friction onset violates slightly.</p>
+<table>
+  <tr><th>Case</th><th class="num">Deceleration</th><th class="num">Distance: sim / analytic</th><th class="num">Error</th><th class="num">Time: sim / analytic</th><th></th></tr>
+  <tr><td>Downhill (tail-first)</td><td class="num">g(μ cos α − sin α) = 5.009 m/s²</td><td class="num">0.8984 / 0.8975 m</td><td class="num">0.10%</td><td class="num">0.578 / 0.579 s</td><td class="pass">PASS</td></tr>
+  <tr><td>Uphill (nose-first)</td><td class="num">g(μ cos α + sin α) = 6.719 m/s²</td><td class="num">0.6662 / 0.6690 m</td><td class="num">0.42%</td><td class="num">0.435 / 0.432 s</td><td class="pass">PASS</td></tr>
+</table>
+
+<figure>
+<img src="../figures/test3B_slide_uphill_to_stop_gear_loads.png" alt="Test 3B uphill slide">
+<figcaption><b>Figure 5.</b> Test 3B — nose-first uphill slide. While sliding (0–0.44 s) each friction trace
+lies <i>on</i> its μN limit (fully sliding); at the stop it drops below the limit into the holding regime.
+Braking friction below the CG pitches the nose down and transfers load onto the front legs; the aft leg
+unloads to 380 N at its lightest but never leaves the ground.</figcaption>
+</figure>
+
+<h2>8. Integrator stability finding</h2>
+
+<h3>8.1 What the plan assumed, and what is actually true</h3>
+<p>The build plan sized friction stiffness from translation alone: c<sub>eff</sub> = μN/v<sub>bl</sub>
+acting on the full 1000 kg, giving −589 rad/s at v<sub>bl</sub> = 0.01 and the conclusion that dt = 0.001 is
+stable. That is incomplete. Friction acts at the feet, 1.8 m below the CG, so it also drives rotation. The
+effective mass seen by lateral friction combines translation and roll:</p>
+<pre>1/m_eff = 1/m + z^2/Ixx = 1/1000 + 1.8^2/667   ->   m_eff = 171 kg      (roll coupling factor 5.86)</pre>
+<p>Linearizing the full 12-state model at the slope equilibrium (numerical Jacobian) gives a fastest pole of
+<b>−3,454 rad/s</b> at v<sub>bl</sub> = 0.01 (lateral/roll), plus −807 rad/s (longitudinal/pitch). For RK4 the
+step is stable only if |hλ| &lt; 2.785 on the real axis, so dt = 0.001 (|hλ| = 3.45) is unstable.</p>
+
+<h3>8.2 Why a symmetric test cannot see it</h3>
+<p>On a slope that rises along the body's x-axis, the geometry is exactly laterally symmetric: v, p, r, roll
+and yaw stay at <i>exactly</i> zero in floating point. The unstable lateral mode is never excited, so an
+unseeded run at the unstable setting shows zero lateral motion and looks correct. Test 3C therefore starts every
+run with a 10<sup>-4</sup> m/s lateral velocity seed. The classification criterion is physical: a stable
+integration of a dissipative system must shed a lateral disturbance; an unstable one amplifies it. The instability
+does not diverge to NaN — once foot slip exceeds v<sub>bl</sub>, friction saturates, stops being stiff, and the
+model settles into bounded chatter.</p>
+
+<h3>8.3 Test 3C — prediction vs. seeded simulation</h3>
+<table>
+  <tr><th>Configuration</th><th class="num">v<sub>bl</sub></th><th class="num">dt</th><th class="num" style="white-space:nowrap">|λ|<sub>max</sub></th><th class="num">max|R(hλ)|</th><th>Predicted</th><th class="num">Seed growth</th><th class="num">Creep: sim / analytic</th><th>Match</th></tr>
+  <tr class="hl"><td><b>Physics reference</b> (UH-60 v<sub>bl</sub>)</td><td class="num">0.0305</td><td class="num">0.001</td><td class="num">1143</td><td class="num">0.998</td><td class="pass">stable</td><td class="num">0.06×</td><td class="num">4.444 / 4.444 mm/s</td><td class="pass">PASS</td></tr>
+  <tr class="hl"><td><b>Control run B</b> (UH-60 v<sub>bl</sub>)</td><td class="num">0.0305</td><td class="num">0.01</td><td class="num">1143</td><td class="num">518</td><td class="fail">unstable</td><td class="num">298×</td><td class="num">21.24 / 4.44 mm/s</td><td class="pass">PASS</td></tr>
+  <tr><td>Original tight v<sub>bl</sub></td><td class="num">0.01</td><td class="num">0.001</td><td class="num">3454</td><td class="num">2.57</td><td class="fail">unstable</td><td class="num">8.1×</td><td class="num">—*</td><td class="pass">PASS</td></tr>
+  <tr><td>Original tight v<sub>bl</sub>, halved dt</td><td class="num">0.01</td><td class="num">0.0005</td><td class="num">3454</td><td class="num">0.999</td><td class="pass">stable</td><td class="num">0.07×</td><td class="num">—*</td><td class="pass">PASS</td></tr>
+  <tr><td>Loosened until stable at dt = 0.01</td><td class="num">0.15</td><td class="num">0.01</td><td class="num">244</td><td class="num">0.978</td><td class="pass">stable</td><td class="num">0.03×</td><td class="num">21.91 / 21.87 mm/s</td><td class="pass">PASS</td></tr>
+</table>
+<p class="sub">"Match" means the observed behaviour (seed grew or decayed) agrees with the linear prediction.
+*The v<sub>bl</sub> = 0.01 runs start from the v<sub>bl</sub> = 0.0305 equilibrium and are still converging after 2 s,
+so their creep values are not quoted as results.</p>
+
+<p><b>Stability boundary.</b> Bisection on the linear prediction gives the smallest stable boundary layer for each
+step, and the smallest creep physics friction can therefore deliver:</p>
+<table>
+  <tr><th>Timestep</th><th class="num">Smallest stable v<sub>bl</sub></th><th class="num">Minimum achievable creep on 5°</th></tr>
+  <tr><td>dt = 0.001</td><td class="num">0.0124 m/s</td><td class="num">1.81 mm/s</td></tr>
+  <tr><td>dt = 0.01</td><td class="num">0.1303 m/s</td><td class="num">18.99 mm/s</td></tr>
+</table>
+
+<figure class="wide">
+<img src="../figures/test3C_integrator_stability_seeded_runs.png" alt="Test 3C stability">
+<figcaption><b>Figure 6.</b> Test 3C — seeded stability runs. Top: at dt = 0.01 every physics-friction run
+converges to ~21 mm/s of creep; only the genuinely stable v<sub>bl</sub> = 0.15 run lands on its own analytic
+line, while the UH-60 v<sub>bl</sub> run sits ~5× above its target of 4.44 mm/s. Bottom: stable integrations
+damp the 10⁻⁴ m/s seed below the dashed line; unstable integrations amplify it into sustained chatter.</figcaption>
+</figure>
+
+<div class="callout green">
+<p><b>Implication for the ML study.</b> Below its stability limit, physics friction at dt = 0.01 does not blow
+up — it chatters at roughly the creep of the stability limit, <i>whatever boundary layer is requested</i>. So at
+the real-time step, physics friction cannot hold the vehicle tighter than ~19–21 mm/s of creep on a 5° slope,
+against 4.44 mm/s from the dt = 0.001 reference. That factor of ~5 is the measurable gap a learned friction
+model at dt = 0.01 must close.</p>
+</div>
+
+<h2>9. Comparison with the UH-60 model</h2>
+<p>The UH-60 model runs its landing gear at dt = 0.001 without this friction instability. Applying the same
+effective-stiffness estimate λ ≈ (μ ΣN/m)/v<sub>bl</sub> × (1 + m z²/I<sub>xx</sub>) to both models:</p>
+<table>
+  <tr><th>Factor</th><th class="num">This model (original)</th><th class="num">UH-60 model</th><th class="num">UH-60 softer by</th></tr>
+  <tr><td>Boundary layer v<sub>bl</sub></td><td class="num">0.01 m/s</td><td class="num">0.1 ft/s = 0.0305 m/s</td><td class="num">3.05×</td></tr>
+  <tr><td>Friction coefficient μ</td><td class="num">0.6</td><td class="num">0.5</td><td class="num">1.2×</td></tr>
+  <tr><td>ΣN/m, full weight on gear</td><td class="num">9.8 m/s²</td><td class="num">10.5 m/s²</td><td class="num">0.93×</td></tr>
+  <tr><td>Roll coupling 1 + m z²/I<sub>xx</sub></td><td class="num">5.86</td><td class="num">≈ 4.48</td><td class="num">1.31×</td></tr>
+  <tr><td><b>Fastest friction pole</b></td><td class="num"><b>−3,454 rad/s</b> (linearized)</td><td class="num"><b>≈ −770 rad/s</b> (estimate)</td><td class="num"><b>~4.5×</b></td></tr>
+</table>
+<p>At dt = 0.001 the UH-60 value gives |hλ| ≈ 0.77, well inside its <span class="mono">ode3</span> solver's
+limit (~2.51). The dominant difference is the boundary layer; the UH-60 source comment on
+<span class="mono">LG_VBL</span> reads "0.1 ft/sec appears to eliminate chattering". Matching that value is what
+stabilized this model's reference. Caveats: the UH-60 figure is a hand estimate rather than a linearization,
+the UH-60 has not been tested with a lateral seed, and during landings the rotor carries much of the weight,
+which lowers the friction pole further.</p>
+
+<h2>10. Corrections made along the way</h2>
+<p>Several of the build plan's assumptions, and one of my own cross-checks, were wrong. Each was caught by a
+tight tolerance or a direct check and is recorded here and in the repository.</p>
+<table>
+  <tr><th>What was assumed</th><th>What is true</th><th>How it was caught</th></tr>
+  <tr><td>Step 2 drop "settles level at 5 cm"</td><td>Settles 0.175° nose-up with unequal loads; only roll and yaw are exactly level; mean deflection is 5.000 cm</td><td>Leg geometry: Σx<sub>i</sub> = +1 m</td></tr>
+  <tr><td>First hand-derived equilibrium (Σx<sub>i</sub>N<sub>i</sub> = 0)</td><td>Off by ~11 N — it dropped the z<sub>i</sub> sin θ moment-arm term (53.8 N·m); the <i>simulation</i> was right</td><td>Tight 2A tolerance; replaced by an exact Newton solve</td></tr>
+  <tr><td>Friction pole −589 rad/s; dt = 0.001 stable at v<sub>bl</sub> = 0.01</td><td>−3,454 rad/s via roll coupling; unstable at dt = 0.001</td><td>Linearization of the full model</td></tr>
+  <tr><td>v<sub>bl</sub> = 0.05 stable at dt = 0.01</td><td>Unstable; needs v<sub>bl</sub> ≥ 0.130</td><td>Linearization + seeded runs</td></tr>
+  <tr><td>A clean symmetric run means the step is stable</td><td>Symmetry never excites the unstable mode</td><td>Seeded vs. unseeded comparison</td></tr>
+  <tr><td>Energy rise or friction sign reversal flags instability</td><td>Neither does here (downhill creep keeps releasing energy); seed growth does</td><td>Diagnostic runs before choosing the criterion</td></tr>
+</table>
+
+<h2>11. Next steps</h2>
+<ol>
+  <li><b>Run the three-case ML experiment</b> as designed: (A) physics, dt = 0.001, reference — now verified stable;
+      (B) physics, dt = 0.01, control — verified to chatter at ~21 mm/s; (C) ML, dt = 0.01 — target the reference's
+      4.44 mm/s creep and slide-to-stop distances. Seed lateral motion in every stability-relevant run.</li>
+  <li><b>Train on windowed friction, not instantaneous force.</b> The ML model should predict the effective friction
+      over each 0.01 s window given the state at its start. Learning instantaneous force from instantaneous velocity
+      would reproduce the same stiff dynamics and gain nothing at the coarse step.</li>
+  <li><b>Decide on μ.</b> This model uses 0.6; the UH-60 uses 0.5. Matching it would soften the fastest pole to
+      roughly −950 rad/s and raise creep on 5° to ~5.3 mm/s.</li>
+  <li><b>Check the UH-60 model the same way.</b> Its friction stability at dt = 0.001 is estimated, not measured, and it
+      has never been run with a lateral seed.</li>
+  <li><b>Scale-up</b> (after the ML result): per-leg compression DOF with unsprung mass (reintroduces genuine
+      normal-direction stiffness), nonlinear gas-spring leg law, richer friction (LuGre/brush), rotor thrust input.</li>
+</ol>
+
+<h2>Appendix — files and how to run</h2>
+<p><b>Run everything:</b> <span class="mono">matlab -batch "run_all_tests"</span> from the
+<span class="mono">SimpleLandingModel</span> folder. Runs all three suites and writes 25 figures to
+<span class="mono">figures/</span>.</p>
+<table>
+  <tr><th>File</th><th>Role</th></tr>
+  <tr><td class="mono">rot_b2i.m</td><td>Body→inertial rotation — the single definition, called everywhere</td></tr>
+  <tr><td class="mono">landing_params.m</td><td>All parameters in one struct (v<sub>bl</sub> = 0.1 ft/s)</td></tr>
+  <tr><td class="mono">make_terrain.m</td><td>Planar terrain from slope and uphill heading → normal vector</td></tr>
+  <tr><td class="mono">landing_eom.m</td><td>12-state equations of motion, xdot = f(F, M)</td></tr>
+  <tr><td class="mono">contact_forces.m</td><td>Per-leg contact relative to the terrain plane → body force and moment</td></tr>
+  <tr><td class="mono">friction_physics.m</td><td>Regularized Coulomb friction — the swappable interface</td></tr>
+  <tr><td class="mono">rk4_step.m, run_landing_sim.m</td><td>Fixed-step RK4 and the logging driver</td></tr>
+  <tr><td class="mono">linearize_eom.m</td><td>Numerical Jacobian and eigenvalues, for stability prediction</td></tr>
+  <tr><td class="mono">landing_energy.m, check_sanity.m</td><td>Energy bookkeeping and the common safety checks</td></tr>
+  <tr><td class="mono">test_step1_freefall.m, test_step2_contact.m, test_step3_friction_slope.m</td><td>Verification suites</td></tr>
+  <tr><td class="mono">run_all_tests.m, plot_landing_results.m</td><td>Runner and figure generation</td></tr>
+  <tr><td class="mono">PLAN.md, README.md</td><td>Design plan (with the Section 6 correction) and current status</td></tr>
+</table>
+
+</body>
+</html>

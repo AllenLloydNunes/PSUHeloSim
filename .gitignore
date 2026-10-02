@@ -1,0 +1,19 @@
+# MATLAB editor autosaves
+*.asv
+*.autosave
+*.m~
+
+# Result data -- regenerable, and large.
+# Recreate with:  run_all_tests.m, sweep_dt_stability.m, sweep_dt_drop.m
+*.mat
+
+# Simulink build artifacts (not used here yet, but cheap insurance)
+slprj/
+sccprj/
+*.slxc
+codegen/
+
+# OS cruft
+Thumbs.db
+desktop.ini
+.DS_Store
